@@ -1,88 +1,87 @@
 <template>
-  <div v-if="isOpen" class="modal-backdrop" @click.self="$emit('close')">
-    <div class="modal" ref="modalRef">
-      <header class="modal__header">
-        <h2>Edit {{ branch?.name }} branch reservation settings</h2>
-        <button class="icon-btn" @click="$emit('close')">✕</button>
-      </header>
+  <BaseModal
+    :is-open="isOpen"
+    :title="`Edit ${branch?.name ?? ''} branch reservation settings`"
+    @close="$emit('close')"
+  >
+    <div class="notice">Branch working hours are {{ workingFrom }} - {{ workingTo }}</div>
 
-      <div class="notice">Branch working hours are {{ workingFrom }} - {{ workingTo }}</div>
+    <div class="modal__body">
+      <!-- Reservation Duration -->
+      <div class="field">
+        <label>Reservation Duration (minutes) <span class="required">*</span></label>
+        <input type="text" v-model="form.reservation_duration" required @input="onNumberInput" />
+        <p v-if="!form.reservation_duration" class="err">This field is required</p>
+      </div>
 
-      <div class="modal__body">
-        <!-- Reservation Duration -->
-        <div class="field">
-          <label>Reservation Duration (minutes) <span class="required">*</span></label>
-          <input type="text" v-model="form.reservation_duration" required @input="onNumberInput" />
-          <p v-if="!form.reservation_duration" class="err">This field is required</p>
-        </div>
+      <!-- Tables -->
+      <div class="field">
+        <label>Tables</label>
+        <MultiSelect
+          :options="tableOptions"
+          :selected-ids="form.table_ids"
+          placeholder="Select tables..."
+          empty-text="No tables available"
+          :get-item-label="(item) => `${item.section_name} - ${item.table_name}`"
+          @toggle="toggleTable"
+          @remove="removeTable"
+        />
+      </div>
 
-        <!-- Tables -->
-        <div class="field">
-          <label>Tables</label>
-          <MultiSelect
-            :options="tableOptions"
-            :selected-ids="form.table_ids"
-            placeholder="Select tables..."
-            empty-text="No tables available"
-            :get-item-label="(item) => `${item.section_name} - ${item.table_name}`"
-            @toggle="toggleTable"
-            @remove="removeTable"
-          />
-        </div>
+      <!-- Days and Slots -->
+      <div class="days">
+        <div v-for="day in days" :key="day" class="day">
+          <div class="day-header">
+            <span class="day-label">{{ capitalize(day) }}</span>
+            <button
+              v-if="day === 'saturday'"
+              type="button"
+              class="apply-btn"
+              @click="applySaturdayToAll"
+            >
+              Apply on all days
+            </button>
+          </div>
 
-        <!-- Days and Slots -->
-        <div class="days">
-          <div v-for="day in days" :key="day" class="day">
-            <div class="day-header">
-              <span class="day-label">{{ capitalize(day) }}</span>
-              <button
-                v-if="day === 'saturday'"
-                type="button"
-                class="apply-btn"
-                @click="applySaturdayToAll"
-              >
-                Apply on all days
-              </button>
-            </div>
-
-            <div class="slots">
-              <span class="placeholder" v-if="form.reservation_times[day]?.length == 0">
-                Add Available Reservation Times
-              </span>
-              <TimeSlot
-                v-for="(slot, i) in form.reservation_times[day] || []"
-                :key="i"
-                :start-time="slot[0]"
-                :end-time="slot[1]"
-                @update:start-time="updateSlotTime(day, i, 0, $event)"
-                @update:end-time="updateSlotTime(day, i, 1, $event)"
-                @remove="removeSlot(day, i)"
-              />
-              <button
-                class="add"
-                :disabled="(form.reservation_times[day]?.length || 0) >= 3"
-                @click="addSlot(day)"
-              >
-                +
-              </button>
-            </div>
+          <div class="slots">
+            <span class="placeholder" v-if="form.reservation_times[day]?.length == 0">
+              Add Available Reservation Times
+            </span>
+            <TimeSlot
+              v-for="(slot, i) in form.reservation_times[day] || []"
+              :key="i"
+              :start-time="slot[0]"
+              :end-time="slot[1]"
+              @update:start-time="updateSlotTime(day, i, 0, $event)"
+              @update:end-time="updateSlotTime(day, i, 1, $event)"
+              @remove="removeSlot(day, i)"
+            />
+            <button
+              class="add"
+              :disabled="(form.reservation_times[day]?.length || 0) >= 3"
+              @click="addSlot(day)"
+            >
+              +
+            </button>
           </div>
         </div>
       </div>
-
-      <footer class="modal__footer">
-        <button class="button" @click="$emit('close')">Cancel</button>
-        <button class="button primary" @click="saveBranch">Save</button>
-      </footer>
     </div>
-  </div>
+
+    <template #footer>
+      <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
+      <BaseButton variant="primary" @click="saveBranch">Save</BaseButton>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import type { Branch, TableOption, BranchForm } from '@/types/branches'
 import MultiSelect from './MultiSelect.vue'
 import TimeSlot from './TimeSlot.vue'
+import BaseModal from './BaseModal.vue'
+import BaseButton from './BaseButton.vue'
 
 interface Props {
   isOpen: boolean
@@ -101,7 +100,7 @@ const emit = defineEmits<{
   save: [form: BranchForm]
 }>()
 
-const modalRef = ref<HTMLElement | null>(null)
+// removed unused modalRef after BaseModal refactor
 const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
 const form = reactive<BranchForm>({
@@ -209,45 +208,6 @@ function saveBranch() {
 </script>
 
 <style scoped lang="scss">
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: grid;
-  place-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  width: 100%;
-  max-width: 520px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  outline: none;
-}
-
-.modal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal__body {
-  padding: 16px;
-}
-
-.modal__footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  padding: 0 12px 12px;
-}
-
 .notice {
   margin-top: 10px;
   background: #eaf2ff;
@@ -274,31 +234,6 @@ function saveBranch() {
   .err {
     color: #b91c1c;
     font-size: 12px;
-  }
-}
-
-.icon-btn {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.button {
-  padding: 8px 16px;
-  background-color: #5f27cc;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: filter 0.2s ease;
-
-  &:hover {
-    filter: brightness(0.95);
-  }
-
-  &.primary {
-    background-color: #5f27cc;
   }
 }
 

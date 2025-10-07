@@ -1,7 +1,7 @@
 <template>
   <div class="table-container">
     <div class="table-header">
-      <button class="button secondary" @click="$emit('add-branch')">Add Branches</button>
+      <BaseButton variant="secondary" @click="$emit('add-branch')">Add Branches</BaseButton>
     </div>
 
     <table class="branches-table">
@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import type { Branch } from '@/types/branches'
+import BaseButton from '@/components/BaseButton.vue'
 
 interface Props {
   branches: Branch[]
@@ -79,30 +80,6 @@ defineEmits<{
   thead th {
     background: #fafafa;
     font-weight: 600;
-  }
-}
-
-.button {
-  padding: 8px 16px;
-  background-color: #5f27cc;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: filter 0.2s ease;
-
-  &:hover {
-    filter: brightness(0.95);
-  }
-
-  &.secondary {
-    background-color: #fff;
-    border: 1px solid #aaa;
-    color: #333;
-
-    &:hover {
-      background-color: #f2f2f2;
-    }
   }
 }
 </style>

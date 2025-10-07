@@ -2,7 +2,9 @@
   <div class="app">
     <header class="header">
       <h1>Reservations</h1>
-      <button class="button primary" @click="disableAllReservations">Disable Reservations</button>
+      <BaseButton variant="primary" @click="disableAllReservations"
+        >Disable Reservations</BaseButton
+      >
     </header>
 
     <main class="content">
@@ -46,6 +48,7 @@ import { useBranches } from '@/composables/useBranches'
 import BranchesTable from '@/components/BranchesTable.vue'
 import AddBranchModal from '@/components/AddBranchModal.vue'
 import EditBranchModal from '@/components/EditBranchModal.vue'
+import BaseButton from '@/components/BaseButton.vue'
 
 // Use the branches composable
 const {
@@ -152,23 +155,5 @@ async function disableAllReservations() {
   padding: 12px;
   background: #f2f2f2;
   text-align: center;
-}
-
-.button {
-  padding: 8px 16px;
-  background-color: #5f27cc;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: filter 0.2s ease;
-
-  &:hover {
-    filter: brightness(0.95);
-  }
-
-  &.primary {
-    background-color: #5f27cc;
-  }
 }
 </style>

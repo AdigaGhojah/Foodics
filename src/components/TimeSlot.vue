@@ -171,36 +171,36 @@ function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
   border: 1px solid #9f7aea;
   border-radius: 999px;
   position: relative;
-}
 
-.time-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
+  .time-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
 
-.time-input {
-  width: 20px;
-  border: none;
-  outline: none;
-  background: transparent;
-  text-align: center;
-  font-size: 14px;
-}
+  .time-input {
+    width: 20px;
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: center;
+    font-size: 14px;
+  }
 
-.delete-btn {
-  position: absolute;
-  right: -6px;
-  top: -6px;
-  border: 1px solid #ccc;
-  background: white;
-  border-radius: 999px;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  .delete-btn {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 999px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 </style>

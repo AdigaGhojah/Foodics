@@ -38,19 +38,22 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 interface Props {
-  options: any[]
+  options: unknown[]
   selectedIds: string[]
   placeholder?: string
   emptyText?: string
-  getItemId?: (item: any) => string
-  getItemLabel?: (item: any) => string
+  getItemId?: (item: unknown) => string
+  getItemLabel?: (item: unknown) => string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: 'Select items...',
   emptyText: 'No items available',
-  getItemId: (item: any) => item.id,
-  getItemLabel: (item: any) => item.name || item.label || String(item),
+  getItemId: (item: unknown) => (item as { id: string }).id,
+  getItemLabel: (item: unknown) =>
+    (item as { name?: string; label?: string }).name ||
+    (item as { label?: string }).label ||
+    String(item),
 })
 
 const emit = defineEmits<{
@@ -95,101 +98,97 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .multiselect {
-  position: relative;
-}
+  &-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    cursor: pointer;
+  }
 
-.multiselect-control {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 40px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 6px 10px;
-  background: #fff;
-  cursor: pointer;
-}
+  &-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 
-.multiselect-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+  &-placeholder {
+    color: #94a3b8;
+  }
 
-.multiselect-placeholder {
-  color: #94a3b8;
-}
+  &-caret {
+    margin-left: 8px;
+    user-select: none;
+  }
 
-.multiselect-caret {
-  margin-left: 8px;
-  user-select: none;
-}
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #1e293b;
+    border: 1px solid #c7d2fe;
+    font-size: 13px;
+  }
 
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #1e293b;
-  border: 1px solid #c7d2fe;
-  font-size: 13px;
-}
+  .tag__x {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    color: #475569;
+  }
 
-.tag__x {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
-  color: #475569;
-}
+  &-dropdown {
+    position: absolute;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    max-height: 260px;
+    overflow: auto;
+    padding: 6px;
+    z-index: 10;
+    max-width: 488px;
+    width: 100%;
+  }
 
-.multiselect-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  max-height: 260px;
-  overflow: auto;
-  padding: 6px;
-  z-index: 10;
-  margin-top: 4px;
-}
+  &-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
 
-.multiselect-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
+    &:hover {
+      background: #f8fafc;
+    }
+  }
 
-.multiselect-option:hover {
-  background: #f8fafc;
-}
+  &-checkbox {
+    pointer-events: none;
+  }
 
-.multiselect-checkbox {
-  pointer-events: none;
-}
+  &-label {
+    font-size: 14px;
+    color: #111827;
+  }
 
-.multiselect-label {
-  font-size: 14px;
-  color: #111827;
-}
-
-.multiselect-empty {
-  padding: 10px;
-  color: #64748b;
-  font-size: 14px;
-  text-align: center;
+  &-empty {
+    padding: 10px;
+    color: #64748b;
+    font-size: 14px;
+    text-align: center;
+  }
 }
 </style>

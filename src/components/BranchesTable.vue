@@ -1,7 +1,9 @@
 <template>
   <div class="table-container">
     <div class="table-header">
-      <BaseButton variant="secondary" @click="$emit('add-branch')">Add Branches</BaseButton>
+      <BaseButton variant="outlined" color="secondary" @click="$emit('add-branch')"
+        >Add Branches</BaseButton
+      >
     </div>
 
     <table class="branches-table">

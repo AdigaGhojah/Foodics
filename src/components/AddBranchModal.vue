@@ -16,7 +16,7 @@
     </div>
 
     <template #footer>
-      <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
+      <BaseButton color="secondary" @click="$emit('close')">Cancel</BaseButton>
       <BaseButton :disabled="!selectedBranchIds.length" @click="addSelectedBranches">
         Add Branches
       </BaseButton>

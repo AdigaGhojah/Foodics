@@ -22,7 +22,7 @@
           :selected-ids="form.table_ids"
           placeholder="Select tables..."
           empty-text="No tables available"
-          :get-item-label="(item) => `${item.section_name} - ${item.table_name}`"
+          :get-item-label="getTableLabel"
           @toggle="toggleTable"
           @remove="removeTable"
         />
@@ -69,8 +69,17 @@
     </div>
 
     <template #footer>
-      <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
-      <BaseButton variant="primary" @click="saveBranch">Save</BaseButton>
+      <div class="footer-container">
+        <BaseButton color="danger" variant="text" @click="disableReservations"
+          >Disable Reservations</BaseButton
+        >
+        <div class="footer-buttons">
+          <BaseButton color="secondary" variant="outlined" @click="$emit('close')"
+            >Cancel</BaseButton
+          >
+          <BaseButton color="primary" @click="saveBranch">Save</BaseButton>
+        </div>
+      </div>
     </template>
   </BaseModal>
 </template>
@@ -82,6 +91,7 @@ import MultiSelect from './MultiSelect.vue'
 import TimeSlot from './TimeSlot.vue'
 import BaseModal from './BaseModal.vue'
 import BaseButton from './BaseButton.vue'
+import { useBranches } from '@/composables/useBranches'
 
 interface Props {
   isOpen: boolean
@@ -124,6 +134,11 @@ const tableOptions = computed<TableOption[]>(() => {
   }
   return options
 })
+
+function getTableLabel(item: unknown) {
+  const t = item as TableOption
+  return `${t.section_name} - ${t.table_name}`
+}
 
 // Watch for branch changes to populate form
 watch(
@@ -203,7 +218,22 @@ function capitalize(str: string) {
 }
 
 function saveBranch() {
+  if (!form.reservation_duration) {
+    return
+  }
   emit('save', { ...form })
+}
+
+const { updateBranchReservationStatus } = useBranches()
+
+async function disableReservations() {
+  if (!props.branch) return
+  try {
+    await updateBranchReservationStatus(props.branch.id, false)
+  } catch (e) {
+    console.error('Failed to disable reservation for branch:', e)
+    alert('Failed to disable reservation')
+  }
 }
 </script>
 
@@ -298,5 +328,15 @@ function saveBranch() {
   color: #6d28d9;
   cursor: pointer;
   font-size: 14px;
+}
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.footer-buttons {
+  display: flex;
+  gap: 8px;
 }
 </style>

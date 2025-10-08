@@ -2,9 +2,7 @@
   <div class="app">
     <header class="header">
       <h1>Reservations</h1>
-      <BaseButton variant="primary" @click="disableAllReservations"
-        >Disable Reservations</BaseButton
-      >
+      <BaseButton color="primary" @click="disableAllReservations">Disable Reservations</BaseButton>
     </header>
 
     <main class="content">

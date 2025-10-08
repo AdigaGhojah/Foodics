@@ -30,14 +30,13 @@ import type { Branch } from '@/types/branches'
 import MultiSelect from './MultiSelect.vue'
 import BaseModal from './BaseModal.vue'
 import BaseButton from './BaseButton.vue'
+import { useBranches, disabledBranches } from '@/composables/useBranches'
 
 interface Props {
   isOpen: boolean
-  disabledBranches: Branch[]
-  branchesComposable: ReturnType<typeof import('@/composables/useBranches').useBranches>
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
@@ -47,7 +46,7 @@ const selectedBranchIds = ref<string[]>([])
 const errors = reactive<{ [K in keyof Branch]?: string }>({})
 const isAdding = ref(false)
 
-const { updateBranchReservationStatus, loadBranches } = props.branchesComposable
+const { updateBranchReservationStatus, loadBranches } = useBranches()
 
 function toggleBranch(id: string) {
   const index = selectedBranchIds.value.indexOf(id)

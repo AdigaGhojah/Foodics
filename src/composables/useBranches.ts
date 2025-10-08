@@ -1,16 +1,14 @@
 import { ref, computed } from 'vue'
 import { getJSON, putJSON } from '@/lib/api'
 import type { Branch, Response, BranchForm } from '@/types/branches'
-
+export const branches = ref<Branch[]>([])
+export const disabledBranches = ref<Branch[]>([])
+export const enabledBranches = computed(() => {
+  return branches.value.filter((branch) => branch.accepts_reservations === true)
+})
 export function useBranches() {
   const loading = ref(false)
-  const branches = ref<Branch[]>([])
-  const disabledBranches = ref<Branch[]>([])
   const error = ref<string | null>(null)
-
-  const enabledBranches = computed(() => {
-    return branches.value.filter((branch) => branch.accepts_reservations === true)
-  })
 
   async function loadBranches() {
     loading.value = true
@@ -79,7 +77,6 @@ export function useBranches() {
   return {
     loading,
     branches: enabledBranches,
-    disabledBranches,
     error,
     loadBranches,
     updateBranchReservationStatus,

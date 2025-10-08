@@ -93,11 +93,11 @@ import MultiSelect from './MultiSelect.vue'
 import TimeSlot from './TimeSlot.vue'
 import BaseModal from './BaseModal.vue'
 import BaseButton from './BaseButton.vue'
+import { useBranches } from '@/composables/useBranches'
 
 interface Props {
   isOpen: boolean
   branch: Branch | null
-  branchesComposable: ReturnType<typeof import('@/composables/useBranches').useBranches>
 }
 
 const props = defineProps<Props>()
@@ -246,7 +246,7 @@ async function saveBranch() {
   }
 }
 
-const { updateBranchReservationStatus, updateBranch } = props.branchesComposable
+const { updateBranchReservationStatus, updateBranch } = useBranches()
 
 async function disableReservations() {
   if (!props.branch) return

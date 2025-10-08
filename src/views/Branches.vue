@@ -16,20 +16,10 @@
     <footer class="footer">© 2025 My App</footer>
 
     <!-- Add Modal -->
-    <AddBranchModal
-      :is-open="showAddModal"
-      :disabled-branches="disabledBranches"
-      :branches-composable="branchesComposable"
-      @close="closeAddModal"
-    />
+    <AddBranchModal :is-open="showAddModal" @close="closeAddModal" />
 
     <!-- Edit Modal -->
-    <EditBranchModal
-      :is-open="showEditModal"
-      :branch="selectedBranch"
-      :branches-composable="branchesComposable"
-      @close="closeEditModal"
-    />
+    <EditBranchModal :is-open="showEditModal" :branch="selectedBranch" @close="closeEditModal" />
   </div>
   <LoadingSpinner v-if="loading" message="Loading branches..." />
 </template>
@@ -38,16 +28,14 @@
 defineOptions({ name: 'BranchesView' })
 import { ref, onMounted } from 'vue'
 import type { Branch } from '@/types/branches'
-import { useBranches } from '@/composables/useBranches'
+import { useBranches, branches } from '@/composables/useBranches'
 import BranchesTable from '@/components/BranchesTable.vue'
 import AddBranchModal from '@/components/AddBranchModal.vue'
 import EditBranchModal from '@/components/EditBranchModal.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
-const branchesComposable = useBranches()
-const { loading, branches, disabledBranches, loadBranches, updateBranchReservationStatus } =
-  branchesComposable
+const { loading, loadBranches, updateBranchReservationStatus } = useBranches()
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -77,7 +65,7 @@ async function disableAllReservations() {
   try {
     const currentBranches = branches.value
     await Promise.all(currentBranches.map((b) => updateBranchReservationStatus(b.id, false, false)))
-    loadBranches()
+    await loadBranches()
   } catch (e) {
     console.error('Failed to disable reservations for all branches:', e)
   }

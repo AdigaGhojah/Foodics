@@ -53,6 +53,7 @@
               :start-time="slot[0]"
               :end-time="slot[1]"
               :min-duration="form.reservation_duration"
+              :has-overlap="hasSlotOverlap(day, i)"
               @update:start-time="updateSlotTime(day, i, 0, $event)"
               @update:end-time="updateSlotTime(day, i, 1, $event)"
               @remove="removeSlot(day, i)"
@@ -208,6 +209,31 @@ function onSlotValidityChange(day: string, index: number, isValid: boolean) {
   invalidSlots[day][index] = !isValid
 }
 
+function hasSlotOverlap(day: string, currentIndex: number): boolean {
+  const slots = form.reservation_times[day]
+  if (!slots || slots.length <= 1) return false
+
+  const currentSlot = slots[currentIndex]
+  if (!currentSlot || !currentSlot[0] || !currentSlot[1]) return false
+
+  const currentStart = timeToMinutes(currentSlot[0])
+  const currentEnd = timeToMinutes(currentSlot[1])
+
+  if (currentStart === null || currentEnd === null) return false
+
+  return slots.some((slot, index) => {
+    if (index === currentIndex || !slot[0] || !slot[1]) return false
+
+    const slotStart = timeToMinutes(slot[0])
+    const slotEnd = timeToMinutes(slot[1])
+
+    if (slotStart === null || slotEnd === null) return false
+
+    // Check for overlap: current slot overlaps with another slot
+    return currentStart < slotEnd && currentEnd > slotStart
+  })
+}
+
 function applySaturdayToAll() {
   const saturdaySlots = form.reservation_times['saturday']
   if (saturdaySlots) {
@@ -221,6 +247,15 @@ function applySaturdayToAll() {
 
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function timeToMinutes(time: string): number | null {
+  const [h, m] = time.split(':')
+  if (!h || !m) return null
+  const hours = parseInt(h, 10)
+  const minutes = parseInt(m, 10)
+  if (isNaN(hours) || isNaN(minutes)) return null
+  return hours * 60 + minutes
 }
 
 async function saveBranch() {

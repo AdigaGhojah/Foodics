@@ -1,65 +1,47 @@
 <template>
   <div :class="['time-slot', { invalid: !isValid }]">
-    <!-- START TIME -->
     <div class="time-group">
       <input
         class="time-input"
-        :value="getPart(startTime, 'h')"
+        :value="startHours"
         maxlength="2"
-        inputmode="numeric"
-        pattern="\d*"
-        data-part="h"
-        :data-field="0"
-        @input="onTimePartInput($event, 0, 'h')"
-        @paste="onTimePaste($event, 0)"
-        @keydown.backspace="onPartBackspace($event, 0, 'h')"
+        @input="updateTime('start', 'hours', $event)"
+        @paste="handlePaste('start', $event)"
+        @keydown.backspace="handleBackspace('start', 'hours', $event)"
       />
       <span>:</span>
       <input
         class="time-input"
-        :value="getPart(startTime, 'm')"
+        :value="startMinutes"
         maxlength="2"
-        inputmode="numeric"
-        pattern="\d*"
-        data-part="m"
-        :data-field="0"
-        @input="onTimePartInput($event, 0, 'm')"
-        @keydown.backspace="onPartBackspace($event, 0, 'm')"
+        @input="updateTime('start', 'minutes', $event)"
+        @keydown.backspace="handleBackspace('start', 'minutes', $event)"
       />
     </div>
 
     <span>–</span>
 
-    <!-- END TIME -->
     <div class="time-group">
       <input
         class="time-input"
-        :value="getPart(endTime, 'h')"
+        :value="endHours"
         maxlength="2"
-        inputmode="numeric"
-        pattern="\d*"
-        data-part="h"
-        :data-field="1"
-        @input="onTimePartInput($event, 1, 'h')"
-        @paste="onTimePaste($event, 1)"
-        @keydown.backspace="onPartBackspace($event, 1, 'h')"
+        @input="updateTime('end', 'hours', $event)"
+        @paste="handlePaste('end', $event)"
+        @keydown.backspace="handleBackspace('end', 'hours', $event)"
       />
       <span>:</span>
       <input
         class="time-input"
-        :value="getPart(endTime, 'm')"
+        :value="endMinutes"
         maxlength="2"
-        inputmode="numeric"
-        pattern="\d*"
-        data-part="m"
-        :data-field="1"
-        @input="onTimePartInput($event, 1, 'm')"
-        @keydown.backspace="onPartBackspace($event, 1, 'm')"
+        @input="updateTime('end', 'minutes', $event)"
+        @keydown.backspace="handleBackspace('end', 'minutes', $event)"
       />
     </div>
 
     <button class="delete-btn" @click="$emit('remove')">×</button>
-    <span v-if="!isValid" class="slot-err"> Invalid slot </span>
+    <span v-if="!isValid" class="slot-err">{{ errorMessage }}</span>
   </div>
 </template>
 
@@ -70,6 +52,7 @@ interface Props {
   startTime: string
   endTime: string
   minDuration?: number
+  hasOverlap?: boolean
 }
 
 const props = defineProps<Props>()
@@ -81,104 +64,146 @@ const emit = defineEmits<{
   'validity-change': [isValid: boolean]
 }>()
 
-function getPart(v: string, part: 'h' | 'm'): string {
-  const [h = '', m = ''] = (v || '').split(':')
-  return part === 'h' ? h : m
+// Computed properties for cleaner template
+const startHours = computed(() => props.startTime.split(':')[0] || '')
+const startMinutes = computed(() => props.startTime.split(':')[1] || '')
+const endHours = computed(() => props.endTime.split(':')[0] || '')
+const endMinutes = computed(() => props.endTime.split(':')[1] || '')
+
+// Utility functions
+const clampValue = (value: string, max: number): string => {
+  const num = Math.min(max, Math.max(0, parseInt(value.replace(/\D/g, ''), 10) || 0))
+  return num.toString().padStart(2, '0')
 }
 
-function clampTime(part: 'h' | 'm', raw: string): string {
-  let d = raw.replace(/\D/g, '').slice(0, 2)
-  if (!d) return ''
-  const n = Number(d)
-  if (part === 'h') d = String(Math.min(23, n)).padStart(d.length === 2 ? 2 : d.length, '0')
-  else d = String(Math.min(59, n)).padStart(d.length === 2 ? 2 : d.length, '0')
-  return d.slice(0, 2)
+const formatTime = (hours: string, minutes: string): string => {
+  const h = hours ? clampValue(hours, 23) : ''
+  const m = minutes ? clampValue(minutes, 59) : ''
+  return h && m ? `${h}:${m}` : h || m ? `${h || '00'}:${m || '00'}` : ''
 }
 
-function setSlotPart(field: 0 | 1, part: 'h' | 'm', val: string) {
-  const currentTime = field === 0 ? props.startTime : props.endTime
-  let [h = '', m = ''] = currentTime.split(':')
-  if (part === 'h') h = val
-  else m = val
-  const combined =
-    (h ? h.padStart(2, '0') : '') + (m !== '' ? `:${m.padStart(2, '0')}` : h && m === '' ? ':' : '')
+const toMinutes = (time: string): number | null => {
+  const [h, m] = time.split(':')
+  if (!h || !m) return null
+  const hours = parseInt(h, 10)
+  const minutes = parseInt(m, 10)
+  if (isNaN(hours) || isNaN(minutes)) return null
+  return hours * 60 + minutes
+}
 
-  if (field === 0) {
-    emit('update:startTime', combined)
+// Event handlers
+const updateTime = (type: 'start' | 'end', part: 'hours' | 'minutes', event: Event) => {
+  const input = event.target as HTMLInputElement
+  const inputEvent = event as InputEvent
+
+  if (inputEvent.data && !/^\d$/.test(inputEvent.data)) {
+    input.value = input.value.replace(inputEvent.data, '')
+    return
+  }
+
+  const value = input.value.replace(/\D/g, '').slice(0, 2)
+
+  const clampedValue = part === 'hours' ? clampValue(value, 23) : clampValue(value, 59)
+
+  if (clampedValue !== value) {
+    input.value = clampedValue
+  }
+
+  if (type === 'start') {
+    const newTime = formatTime(
+      part === 'hours' ? clampedValue : startHours.value,
+      part === 'minutes' ? clampedValue : startMinutes.value,
+    )
+
+    emit('update:startTime', newTime)
+
+    if (part === 'hours' && clampedValue.length === 2) {
+      focusNextInput(input, 'minutes')
+    }
   } else {
-    emit('update:endTime', combined)
+    const newTime = formatTime(
+      part === 'hours' ? clampedValue : endHours.value,
+      part === 'minutes' ? clampedValue : endMinutes.value,
+    )
+    emit('update:endTime', newTime)
+
+    if (part === 'hours' && clampedValue.length === 2) {
+      focusNextInput(input, 'minutes')
+    }
   }
 }
 
-function focusSibling(el: HTMLInputElement, want: 'm' | 'h') {
-  const group = el.closest('.time-group') as HTMLElement | null
-  if (!group) return
-  const target = group.querySelector<HTMLInputElement>(`input[data-part="${want}"]`)
-  target?.focus()
-  target?.select()
-}
-
-function onTimePartInput(e: Event, field: 0 | 1, part: 'h' | 'm') {
-  const input = e.target as HTMLInputElement
-  const cleaned = input.value.replace(/\D/g, '').slice(0, 2)
-  const clamped = clampTime(part, cleaned)
-  input.value = clamped
-
-  setSlotPart(field, part, clamped)
-
-  if (part === 'h' && clamped.length === 2) {
-    focusSibling(input, 'm')
-  }
-}
-
-function onPartBackspace(e: KeyboardEvent, field: 0 | 1, part: 'h' | 'm') {
-  const input = e.target as HTMLInputElement
+const handleBackspace = (
+  type: 'start' | 'end',
+  part: 'hours' | 'minutes',
+  event: KeyboardEvent,
+) => {
+  const input = event.target as HTMLInputElement
   if (input.value.length === 0) {
-    const currentTime = field === 0 ? props.startTime : props.endTime
-    let [h = '', m = ''] = currentTime.split(':')
-    if (part === 'h') h = '00'
-    else m = '00'
-    const newTime = `${h}:${m}`
+    // Clear the field and focus previous
+    if (type === 'start') {
+      emit('update:startTime', part === 'hours' ? '00:00' : `${startHours.value}:00`)
+    } else {
+      emit('update:endTime', part === 'hours' ? '00:00' : `${endHours.value}:00`)
+    }
+    focusNextInput(input, 'hours')
+  }
+}
 
-    if (field === 0) {
+const handlePaste = (type: 'start' | 'end', event: ClipboardEvent) => {
+  const text = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 4)
+  if (text.length >= 3) {
+    event.preventDefault()
+    const hours = clampValue(text.slice(0, 2), 23)
+    const minutes = clampValue(text.slice(2, 4), 59)
+    const newTime = `${hours}:${minutes}`
+
+    if (type === 'start') {
       emit('update:startTime', newTime)
     } else {
       emit('update:endTime', newTime)
     }
 
-    focusSibling(input, 'h')
+    const input = event.target as HTMLInputElement
+    focusNextInput(input, 'minutes')
   }
 }
 
-function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
-  const text = (e.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 4)
-  if (text.length >= 3) {
-    e.preventDefault()
-    const hh = clampTime('h', text.slice(0, 2))
-    const mm = clampTime('m', text.slice(2, 4))
-    setSlotPart(field, 'h', hh)
-    setSlotPart(field, 'm', mm)
-    const target = e.target as HTMLInputElement
-    focusSibling(target, 'm')
-  }
-}
+const focusNextInput = (currentInput: HTMLInputElement, target: 'hours' | 'minutes') => {
+  const group = currentInput.closest('.time-group')
+  if (!group) return
 
-function toMinutes(v: string): number | null {
-  const [hs, ms] = (v || '').split(':')
-  if (hs === undefined || ms === undefined || hs === '' || ms === '') return null
-  const h = Number(hs)
-  const m = Number(ms)
-  if (Number.isNaN(h) || Number.isNaN(m)) return null
-  return h * 60 + m
+  const selector = target === 'hours' ? 'input:first-child' : 'input:last-child'
+  const targetInput = group.querySelector(selector) as HTMLInputElement
+  targetInput?.focus()
+  targetInput?.select()
 }
 
 const isValid = computed(() => {
   const start = toMinutes(props.startTime)
   const end = toMinutes(props.endTime)
+
   if (start === null || end === null) return false
-  if (end < start) return false
+  if (end <= start) return false
   if (props.minDuration && end - start < props.minDuration) return false
+  if (props.hasOverlap) return false
+
   return true
+})
+
+const errorMessage = computed(() => {
+  if (props.hasOverlap) return 'Overlaps with another slot'
+
+  const start = toMinutes(props.startTime)
+  const end = toMinutes(props.endTime)
+
+  if (start === null || end === null) return 'Invalid time'
+  if (end <= start) return 'End must be after start'
+  if (props.minDuration && end - start < props.minDuration) {
+    return `Minimum ${props.minDuration} minutes`
+  }
+
+  return 'Invalid slot'
 })
 
 watch(isValid, (v) => emit('validity-change', v), { immediate: true })

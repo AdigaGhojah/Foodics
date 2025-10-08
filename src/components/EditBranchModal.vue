@@ -52,9 +52,11 @@
               :key="i"
               :start-time="slot[0]"
               :end-time="slot[1]"
+              :min-duration="form.reservation_duration"
               @update:start-time="updateSlotTime(day, i, 0, $event)"
               @update:end-time="updateSlotTime(day, i, 1, $event)"
               @remove="removeSlot(day, i)"
+              @validity-change="onSlotValidityChange(day, i, $event)"
             />
             <button
               class="add"
@@ -121,6 +123,8 @@ const form = reactive<BranchForm>({
     [string, string][]
   >,
 })
+
+const invalidSlots = reactive<Record<string, Record<number, boolean>>>({})
 
 // Build tableOptions from branch.sections[*].tables
 const tableOptions = computed<TableOption[]>(() => {
@@ -202,6 +206,11 @@ function updateSlotTime(day: string, index: number, field: 0 | 1, time: string) 
   }
 }
 
+function onSlotValidityChange(day: string, index: number, isValid: boolean) {
+  if (!invalidSlots[day]) invalidSlots[day] = {}
+  invalidSlots[day][index] = !isValid
+}
+
 function applySaturdayToAll() {
   const saturdaySlots = form.reservation_times['saturday']
   if (saturdaySlots) {
@@ -220,6 +229,11 @@ function capitalize(str: string) {
 function saveBranch() {
   if (!form.reservation_duration) {
     return
+  }
+  // prevent submit if any slot is invalid
+  for (const day in invalidSlots) {
+    const indices = invalidSlots[day]
+    if (indices && Object.values(indices).some((v) => v)) return
   }
   emit('save', { ...form })
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="time-slot">
+  <div :class="['time-slot', { invalid: !isValid }]">
     <!-- START TIME -->
     <div class="time-group">
       <input
@@ -59,13 +59,17 @@
     </div>
 
     <button class="delete-btn" @click="$emit('remove')">×</button>
+    <span v-if="!isValid" class="slot-err"> Invalid slot </span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+
 interface Props {
   startTime: string
   endTime: string
+  minDuration?: number // minutes
 }
 
 const props = defineProps<Props>()
@@ -74,6 +78,7 @@ const emit = defineEmits<{
   'update:startTime': [time: string]
   'update:endTime': [time: string]
   remove: []
+  'validity-change': [isValid: boolean]
 }>()
 
 function getPart(v: string, part: 'h' | 'm'): string {
@@ -160,6 +165,26 @@ function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
     focusSibling(target, 'm')
   }
 }
+
+function toMinutes(v: string): number | null {
+  const [hs, ms] = (v || '').split(':')
+  if (hs === undefined || ms === undefined || hs === '' || ms === '') return null
+  const h = Number(hs)
+  const m = Number(ms)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
+  return h * 60 + m
+}
+
+const isValid = computed(() => {
+  const s = toMinutes(props.startTime)
+  const e = toMinutes(props.endTime)
+  if (s === null || e === null) return false
+  if (e < s) return false
+  if (props.minDuration && e - s < props.minDuration) return false
+  return true
+})
+
+watch(isValid, (v) => emit('validity-change', v), { immediate: true })
 </script>
 
 <style scoped lang="scss">
@@ -171,6 +196,10 @@ function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
   border: 1px solid #9f7aea;
   border-radius: 999px;
   position: relative;
+
+  &.invalid {
+    border-color: #ef4444;
+  }
 
   .time-group {
     display: flex;
@@ -202,5 +231,11 @@ function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
     align-items: center;
     justify-content: center;
   }
+}
+
+.slot-err {
+  color: #b91c1c;
+  font-size: 12px;
+  margin-left: 6px;
 }
 </style>

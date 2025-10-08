@@ -19,51 +19,40 @@
     <AddBranchModal
       :is-open="showAddModal"
       :disabled-branches="disabledBranches"
+      :branches-composable="branchesComposable"
       @close="closeAddModal"
-      @add-branches="handleAddBranches"
     />
 
     <!-- Edit Modal -->
     <EditBranchModal
       :is-open="showEditModal"
       :branch="selectedBranch"
-      :working-from="workingFrom"
-      :working-to="workingTo"
+      :branches-composable="branchesComposable"
       @close="closeEditModal"
-      @save="handleSaveBranch"
     />
   </div>
-
-  <p v-if="loading" style="padding: 8px">Loading…</p>
-  <p v-else-if="error" style="padding: 8px; color: #b91c1c">{{ error }}</p>
+  <LoadingSpinner v-if="loading" message="Loading branches..." />
 </template>
 
 <script setup lang="ts">
 defineOptions({ name: 'BranchesView' })
 import { ref, onMounted } from 'vue'
-import type { Branch, BranchForm } from '@/types/branches'
+import type { Branch } from '@/types/branches'
 import { useBranches } from '@/composables/useBranches'
 import BranchesTable from '@/components/BranchesTable.vue'
 import AddBranchModal from '@/components/AddBranchModal.vue'
 import EditBranchModal from '@/components/EditBranchModal.vue'
 import BaseButton from '@/components/BaseButton.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
-const {
-  loading,
-  branches,
-  disabledBranches,
-  error,
-  loadBranches,
-  updateBranchReservationStatus,
-  updateBranch,
-} = useBranches()
+const branchesComposable = useBranches()
+const { loading, branches, disabledBranches, loadBranches, updateBranchReservationStatus } =
+  branchesComposable
 
-// Modal state
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const selectedBranch = ref<Branch | null>(null)
 
-// Modal handlers
 function openAddModal() {
   showAddModal.value = true
 }
@@ -82,40 +71,15 @@ function closeEditModal() {
   selectedBranch.value = null
 }
 
-async function handleAddBranches(branchIds: string[]) {
-  try {
-    await Promise.all(branchIds.map((id) => updateBranchReservationStatus(id, true, false)))
-    await loadBranches()
-    closeAddModal()
-  } catch (e) {
-    console.error('Failed to add branches:', e)
-    alert('Failed to add branches')
-  }
-}
-
-async function handleSaveBranch(form: BranchForm) {
-  if (!selectedBranch.value) return
-
-  try {
-    await updateBranch(selectedBranch.value.id, form)
-    closeEditModal()
-  } catch (e) {
-    console.error('Failed to save branch:', e)
-    alert('Failed to save branch')
-  }
-}
-
 onMounted(loadBranches)
 
 async function disableAllReservations() {
   try {
-    // branches is a computed of enabled branches
-    const current = branches.value
-    await Promise.all(current.map((b) => updateBranchReservationStatus(b.id, false, false)))
-    await loadBranches()
+    const currentBranches = branches.value
+    await Promise.all(currentBranches.map((b) => updateBranchReservationStatus(b.id, false, false)))
+    loadBranches()
   } catch (e) {
     console.error('Failed to disable reservations for all branches:', e)
-    alert('Failed to disable reservations for all branches')
   }
 }
 </script>

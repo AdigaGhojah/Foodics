@@ -4,7 +4,7 @@
     :title="`Edit ${branch?.name ?? ''} branch reservation settings`"
     @close="$emit('close')"
   >
-    <div class="notice">Branch working hours are {{ workingFrom }} - {{ workingTo }}</div>
+    <div class="notice">Branch working hours are 00:00 - 00:00</div>
 
     <div class="modal__body">
       <!-- Reservation Duration -->
@@ -79,7 +79,7 @@
           <BaseButton color="secondary" variant="outlined" @click="$emit('close')"
             >Cancel</BaseButton
           >
-          <BaseButton color="primary" @click="saveBranch">Save</BaseButton>
+          <BaseButton color="primary" :disabled="isSaving" @click="saveBranch">Save</BaseButton>
         </div>
       </div>
     </template>
@@ -87,29 +87,23 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+import { reactive, watch, computed, ref } from 'vue'
 import type { Branch, TableOption, BranchForm } from '@/types/branches'
 import MultiSelect from './MultiSelect.vue'
 import TimeSlot from './TimeSlot.vue'
 import BaseModal from './BaseModal.vue'
 import BaseButton from './BaseButton.vue'
-import { useBranches } from '@/composables/useBranches'
 
 interface Props {
   isOpen: boolean
   branch: Branch | null
-  workingFrom?: string
-  workingTo?: string
+  branchesComposable: ReturnType<typeof import('@/composables/useBranches').useBranches>
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  workingFrom: '00:00',
-  workingTo: '00:00',
-})
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  save: [form: BranchForm]
 }>()
 
 const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
@@ -124,8 +118,8 @@ const form = reactive<BranchForm>({
 })
 
 const invalidSlots = reactive<Record<string, Record<number, boolean>>>({})
+const isSaving = ref(false)
 
-// Build tableOptions from branch.sections[*].tables
 const tableOptions = computed<TableOption[]>(() => {
   if (!props.branch) return []
   const sections = props.branch.sections || []
@@ -143,13 +137,11 @@ function getTableLabel(item: unknown) {
   return `${t.section_name} - ${t.table_name}`
 }
 
-// Watch for branch changes to populate form
 watch(
   () => props.branch,
   (newBranch) => {
     if (newBranch) {
       form.reservation_duration = newBranch.reservation_duration
-      // Preselect tables that accept reservations
       const selectedIds: string[] = []
       for (const section of newBranch.sections || []) {
         for (const table of section.tables || []) {
@@ -165,9 +157,7 @@ watch(
 
 function onNumberInput(e: Event) {
   const input = e.target as HTMLInputElement
-  // Remove non-digit characters
   input.value = input.value.replace(/\D/g, '')
-  // Update model
   form.reservation_duration = input.value ? parseInt(input.value, 10) : 0
 }
 
@@ -233,19 +223,30 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-function saveBranch() {
+async function saveBranch() {
   if (!form.reservation_duration) {
     return
   }
-  // prevent submit if any slot is invalid
   for (const day in invalidSlots) {
     const indices = invalidSlots[day]
     if (indices && Object.values(indices).some((v) => v)) return
   }
-  emit('save', { ...form })
+
+  if (!props.branch) return
+
+  isSaving.value = true
+  try {
+    await updateBranch(props.branch.id, { ...form })
+    emit('close')
+  } catch (e) {
+    console.error('Failed to save branch:', e)
+    alert('Failed to save branch')
+  } finally {
+    isSaving.value = false
+  }
 }
 
-const { updateBranchReservationStatus } = useBranches()
+const { updateBranchReservationStatus, updateBranch } = props.branchesComposable
 
 async function disableReservations() {
   if (!props.branch) return

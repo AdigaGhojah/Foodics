@@ -17,7 +17,7 @@
 
     <template #footer>
       <BaseButton color="secondary" @click="$emit('close')">Cancel</BaseButton>
-      <BaseButton :disabled="!selectedBranchIds.length" @click="addSelectedBranches">
+      <BaseButton :disabled="!selectedBranchIds.length || isAdding" @click="addSelectedBranches">
         Add Branches
       </BaseButton>
     </template>
@@ -34,17 +34,20 @@ import BaseButton from './BaseButton.vue'
 interface Props {
   isOpen: boolean
   disabledBranches: Branch[]
+  branchesComposable: ReturnType<typeof import('@/composables/useBranches').useBranches>
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  'add-branches': [branchIds: string[]]
 }>()
 
 const selectedBranchIds = ref<string[]>([])
 const errors = reactive<{ [K in keyof Branch]?: string }>({})
+const isAdding = ref(false)
+
+const { updateBranchReservationStatus, loadBranches } = props.branchesComposable
 
 function toggleBranch(id: string) {
   const index = selectedBranchIds.value.indexOf(id)
@@ -62,10 +65,23 @@ function removeBranch(id: string) {
   }
 }
 
-function addSelectedBranches() {
+async function addSelectedBranches() {
   if (!selectedBranchIds.value.length) return
-  emit('add-branches', selectedBranchIds.value)
-  selectedBranchIds.value = []
+
+  isAdding.value = true
+  try {
+    await Promise.all(
+      selectedBranchIds.value.map((id) => updateBranchReservationStatus(id, true, false)),
+    )
+    await loadBranches()
+    selectedBranchIds.value = []
+    emit('close')
+  } catch (e) {
+    console.error('Failed to add branches:', e)
+    alert('Failed to add branches')
+  } finally {
+    isAdding.value = false
+  }
 }
 </script>
 
@@ -84,10 +100,5 @@ function addSelectedBranches() {
     color: #b91c1c;
     font-size: 12px;
   }
-}
-
-.ms-actions {
-  display: flex;
-  justify-content: flex-end;
 }
 </style>

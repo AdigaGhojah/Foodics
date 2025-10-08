@@ -47,6 +47,8 @@ export function useBranches() {
     accepts: boolean = true,
     reload: boolean = true,
   ) {
+    loading.value = true
+
     try {
       await putJSON<Branch>(`/branches/${branchId}`, { accepts_reservations: accepts })
       if (reload) {
@@ -55,16 +57,22 @@ export function useBranches() {
     } catch (e) {
       console.error('Update failed:', e)
       throw new Error('Failed to update branch reservation status')
+    } finally {
+      loading.value = false
     }
   }
 
   async function updateBranch(branchId: string, data: BranchForm) {
+    loading.value = true
+
     try {
       await putJSON<Branch>(`/branches/${branchId}`, data)
       await loadBranches()
     } catch (e: unknown) {
       console.error('Update failed:', e)
       throw new Error('Failed to update branch')
+    } finally {
+      loading.value = false
     }
   }
 

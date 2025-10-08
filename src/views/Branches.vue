@@ -15,10 +15,8 @@
 
     <footer class="footer">© 2025 My App</footer>
 
-    <!-- Add Modal -->
     <AddBranchModal :is-open="showAddModal" @close="closeAddModal" />
 
-    <!-- Edit Modal -->
     <EditBranchModal :is-open="showEditModal" :branch="selectedBranch" @close="closeEditModal" />
   </div>
   <LoadingSpinner v-if="loading" message="Loading branches..." />

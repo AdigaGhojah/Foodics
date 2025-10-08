@@ -7,14 +7,12 @@
     <div class="notice">Branch working hours are 00:00 - 00:00</div>
 
     <div class="modal__body">
-      <!-- Reservation Duration -->
       <div class="field">
         <label>Reservation Duration (minutes) <span class="required">*</span></label>
         <input type="text" v-model="form.reservation_duration" required @input="onNumberInput" />
         <p v-if="!form.reservation_duration" class="err">This field is required</p>
       </div>
 
-      <!-- Tables -->
       <div class="field">
         <label>Tables</label>
         <MultiSelect
@@ -28,7 +26,6 @@
         />
       </div>
 
-      <!-- Days and Slots -->
       <div class="days">
         <div v-for="day in days" :key="day" class="day">
           <div class="day-header">

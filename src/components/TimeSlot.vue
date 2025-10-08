@@ -69,7 +69,7 @@ import { computed, watch } from 'vue'
 interface Props {
   startTime: string
   endTime: string
-  minDuration?: number // minutes
+  minDuration?: number
 }
 
 const props = defineProps<Props>()
@@ -126,7 +126,6 @@ function onTimePartInput(e: Event, field: 0 | 1, part: 'h' | 'm') {
 
   setSlotPart(field, part, clamped)
 
-  // auto-advance when 2 digits done on hours
   if (part === 'h' && clamped.length === 2) {
     focusSibling(input, 'm')
   }
@@ -135,7 +134,6 @@ function onTimePartInput(e: Event, field: 0 | 1, part: 'h' | 'm') {
 function onPartBackspace(e: KeyboardEvent, field: 0 | 1, part: 'h' | 'm') {
   const input = e.target as HTMLInputElement
   if (input.value.length === 0) {
-    // jump back to HH if MM is empty and backspace pressed
     const currentTime = field === 0 ? props.startTime : props.endTime
     let [h = '', m = ''] = currentTime.split(':')
     if (part === 'h') h = '00'
@@ -160,7 +158,6 @@ function onTimePaste(e: ClipboardEvent, field: 0 | 1) {
     const mm = clampTime('m', text.slice(2, 4))
     setSlotPart(field, 'h', hh)
     setSlotPart(field, 'm', mm)
-    // move focus to minutes
     const target = e.target as HTMLInputElement
     focusSibling(target, 'm')
   }
@@ -176,11 +173,11 @@ function toMinutes(v: string): number | null {
 }
 
 const isValid = computed(() => {
-  const s = toMinutes(props.startTime)
-  const e = toMinutes(props.endTime)
-  if (s === null || e === null) return false
-  if (e < s) return false
-  if (props.minDuration && e - s < props.minDuration) return false
+  const start = toMinutes(props.startTime)
+  const end = toMinutes(props.endTime)
+  if (start === null || end === null) return false
+  if (end < start) return false
+  if (props.minDuration && end - start < props.minDuration) return false
   return true
 })
 

@@ -112,7 +112,6 @@ const emit = defineEmits<{
   save: [form: BranchForm]
 }>()
 
-// removed unused modalRef after BaseModal refactor
 const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 
 const form = reactive<BranchForm>({
@@ -190,8 +189,16 @@ function addSlot(day: string) {
     form.reservation_times[day] = []
   }
   if (form.reservation_times[day].length < 3) {
-    form.reservation_times[day].push(['11:00', '17:00'])
+    const startTime = '00:00'
+    const endTime = minutesToTime(form.reservation_duration)
+    form.reservation_times[day].push([startTime, endTime])
   }
+}
+
+function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
 }
 
 function removeSlot(day: string, index: number) {
@@ -244,6 +251,7 @@ async function disableReservations() {
   if (!props.branch) return
   try {
     await updateBranchReservationStatus(props.branch.id, false)
+    emit('close')
   } catch (e) {
     console.error('Failed to disable reservation for branch:', e)
     alert('Failed to disable reservation')

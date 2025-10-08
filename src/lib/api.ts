@@ -12,7 +12,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers || {})
   headers.set('Accept', 'application/json')
   if (TOKEN) headers.set('Authorization', `Bearer ${TOKEN}`)
-  // set Content-Type only when sending a body that isn't FormData
   const hasBody = init.body && !(init.body instanceof FormData)
   if (hasBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')

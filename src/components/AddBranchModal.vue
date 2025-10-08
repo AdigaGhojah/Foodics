@@ -43,7 +43,6 @@ const emit = defineEmits<{
   'add-branches': [branchIds: string[]]
 }>()
 
-// removed unused modalRef after BaseModal refactor
 const selectedBranchIds = ref<string[]>([])
 const errors = reactive<{ [K in keyof Branch]?: string }>({})
 

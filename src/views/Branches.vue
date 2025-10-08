@@ -48,7 +48,6 @@ import AddBranchModal from '@/components/AddBranchModal.vue'
 import EditBranchModal from '@/components/EditBranchModal.vue'
 import BaseButton from '@/components/BaseButton.vue'
 
-// Use the branches composable
 const {
   loading,
   branches,
@@ -63,12 +62,6 @@ const {
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const selectedBranch = ref<Branch | null>(null)
-
-// Simulated props — replace with real ones later
-const workingFrom = '00:00'
-const workingTo = '00:00'
-
-// table options now derived inside EditBranchModal from branch.sections[*].tables
 
 // Modal handlers
 function openAddModal() {
@@ -89,7 +82,6 @@ function closeEditModal() {
   selectedBranch.value = null
 }
 
-// Event handlers
 async function handleAddBranches(branchIds: string[]) {
   try {
     await Promise.all(branchIds.map((id) => updateBranchReservationStatus(id, true, false)))
@@ -106,7 +98,7 @@ async function handleSaveBranch(form: BranchForm) {
 
   try {
     await updateBranch(selectedBranch.value.id, form)
-    // closeEditModal()
+    closeEditModal()
   } catch (e) {
     console.error('Failed to save branch:', e)
     alert('Failed to save branch')
